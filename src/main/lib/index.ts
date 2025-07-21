@@ -1,15 +1,14 @@
 import { appDirectoryName, fileEncoding, welcomeNoteFileName } from '@shared/constants'
 import { NoteInfo } from '@shared/models'
 import { CreateNote, DeleteNote, GetNotes, ReadNote, WriteNote } from '@shared/types'
-import { dialog } from 'electron'
+import { app, dialog } from 'electron'
 import { ensureDir, readdir, readFile, remove, stat, writeFile } from 'fs-extra'
 import { isEmpty } from 'lodash'
-import { homedir } from 'os'
 import path from 'path'
 import welcomeNoteFile from '../../../resources/welcomeNote.md?asset'
 
 export const getRootDir = () => {
-  return `${homedir()}\\${appDirectoryName}`
+  return path.join(app.getPath('userData'), appDirectoryName)
 }
 
 export const getNotes: GetNotes = async () => {
@@ -25,7 +24,7 @@ export const getNotes: GetNotes = async () => {
     console.log('No notes found, creating a welcome note')
     const content = await readFile(welcomeNoteFile, { encoding: fileEncoding })
 
-    await writeFile(`${rootDir}/${welcomeNoteFileName}`, content, { encoding: fileEncoding })
+    await writeFile(path.join(rootDir, welcomeNoteFileName), content, { encoding: fileEncoding })
 
     notes.push(welcomeNoteFileName)
   }
@@ -33,7 +32,7 @@ export const getNotes: GetNotes = async () => {
 }
 
 export const getNoteInfoFromFileName = async (filename: string): Promise<NoteInfo> => {
-  const fileStats = await stat(`${getRootDir()}\\${filename}`)
+  const fileStats = await stat(path.join(getRootDir(), filename))
   return {
     title: filename.replace(/\.md$/, ''),
     lastEditTime: fileStats.mtimeMs
@@ -42,7 +41,7 @@ export const getNoteInfoFromFileName = async (filename: string): Promise<NoteInf
 
 export const readNote: ReadNote = async (fileName) => {
   const rootDir = getRootDir()
-  return readFile(`${rootDir}/${fileName}.md`, {
+  return readFile(path.join(rootDir, `${fileName}.md`), {
     encoding: fileEncoding
   })
 }
@@ -51,7 +50,7 @@ export const writeNote: WriteNote = async (fileName, content) => {
   const rootDir = getRootDir()
 
   console.info(`Writing note ${fileName}`)
-  return writeFile(`${rootDir}/${fileName}.md`, content, { encoding: fileEncoding })
+  return writeFile(path.join(rootDir, `${fileName}.md`), content, { encoding: fileEncoding })
 }
 
 export const createNote: CreateNote = async () => {
@@ -59,7 +58,7 @@ export const createNote: CreateNote = async () => {
   await ensureDir(rootDir)
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'New Note',
-    defaultPath: `${rootDir}/Untitled.md`,
+    defaultPath: path.join(rootDir, 'Untitled.md'),
     buttonLabel: 'Create',
     properties: ['showOverwriteConfirmation'],
     showsTagField: false,
@@ -75,8 +74,7 @@ export const createNote: CreateNote = async () => {
     await dialog.showMessageBox({
       type: 'error',
       title: 'Creation failed',
-      message: `All notes must be saved under ${rootDir}.
-Avoid using other directories!`
+      message: `All notes must be saved under ${rootDir}.\nAvoid using other directories!`
     })
     return false
   }
@@ -101,6 +99,6 @@ export const deleteNote: DeleteNote = async (filename) => {
     return false
   }
   console.info(`Deleting Note: ${filename}`)
-  await remove(`${rootDir}/${filename}.md`)
+  await remove(path.join(rootDir, `${filename}.md`))
   return true
 }

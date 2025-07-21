@@ -21,7 +21,8 @@ try {
     },
     maximize: () => {
       return ipcRenderer.send(':maximize')
-    }
+    },
+    platform: process.platform
   })
 } catch (error) {
   console.log(error)

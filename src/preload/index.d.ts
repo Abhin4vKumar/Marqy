@@ -12,6 +12,7 @@ declare global {
       exit: () => void
       minimize: () => void
       maximize: () => void
+      platform: string
     }
   }
 }
